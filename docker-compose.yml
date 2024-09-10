@@ -17,7 +17,7 @@ services:
       POSTGRES_DB: "hackdb"
       POSTGRES_USER: "hackuser"
       POSTGRES_PASSWORD: "hackpassword"
-      PGDATA: "/var/lib/postgresql/data/pgdata"
+      # PGDATA: "/var/lib/postgresql/data/pgdata"
     volumes:
       - hack-db:/var/lib/postgresql/data
     ports:
