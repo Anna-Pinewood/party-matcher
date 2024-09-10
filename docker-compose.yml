@@ -1,0 +1,27 @@
+# Use postgres/example user/password credentials
+version: "3.9"
+services:
+  bot:
+    build: ./
+    container_name: aiogram_bot
+    environment:
+      - DATABASE_URL=postgresql://hackuser:hackpassword@postgres:5432/hackdb
+    volumes:
+      - /home/dima/hack_13/media:/app/media
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_DB: "hackdb"
+      POSTGRES_USER: "hackuser"
+      POSTGRES_PASSWORD: "hackpassword"
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    volumes:
+      - hack-db:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  hack-db:
