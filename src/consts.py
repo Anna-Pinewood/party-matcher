@@ -16,3 +16,5 @@ OPENAI_API_KEY = os.environ.get(
     "OPENAI_API_KEY", default=config_env.get("OPENAI_API_KEY"))
 PROXY_URL = os.environ.get(
     "PROXY_URL", default=config_env.get("PROXY_URL"))
+TG_TOKEN = os.environ.get(
+    "TG_TOKEN", default=config_env.get("TG_TOKEN"))
