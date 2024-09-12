@@ -1,10 +1,14 @@
-import os
-import requests
+"""Extract text from pdfs and parse resume with llm"""
 import json
 import logging
-from openai import OpenAI, DefaultHttpxClient
+import os
+
+import requests
+from openai import DefaultHttpxClient, OpenAI
 from pypdf import PdfReader
-from secrets import YANDEX_FOLDER_ID, YANDEX_API_KEY, OPENAI_API_KEY, PROXY_URL, RESUME_PROMPT_BASE
+
+from consts import OPENAI_API_KEY, PROXY_URL, YANDEX_API_KEY, YANDEX_FOLDER_ID
+from prompts import RESUME_PROMPT_BASE
 
 
 def extract_text_from_pdf_file(input_filepath: str) -> str:
@@ -21,7 +25,7 @@ def parse_resume_yandexgpt(input_filepath: str) -> dict:
         logging.error(f"No such file: {input_filepath}")
         return {}
     resume_text = extract_text_from_pdf_file(input_filepath)
-    
+
     url = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
     headers = {
         "Content-Type": "application/json",
@@ -43,10 +47,12 @@ def parse_resume_yandexgpt(input_filepath: str) -> dict:
     }
     response = requests.post(url, headers=headers, json=query_json)
     if response.status_code != 200:
-        logging.error(f"Error during request: {response.status_code} {response.text}")
+        logging.error(f"Error during request: {
+                      response.status_code} {response.text}")
         return {}
     result = response.json()
-    json_str_repr = result['result']['alternatives'][0]['message']['text'].replace('\n', '').replace('`', '')
+    json_str_repr = result['result']['alternatives'][0]['message']['text'].replace(
+        '\n', '').replace('`', '')
     try:
         return json.loads(json_str_repr)
     except json.JSONDecodeError:
@@ -61,9 +67,9 @@ def parse_resume_openaigpt(input_filepath: str) -> dict:
     resume_text = extract_text_from_pdf_file(input_filepath)
 
     client = OpenAI(
-        api_key=OPENAI_API_KEY ,
+        api_key=OPENAI_API_KEY,
         http_client=DefaultHttpxClient(
-            proxy = PROXY_URL,
+            proxy=PROXY_URL,
         )
     )
     chat_completion = client.chat.completions.create(
@@ -76,7 +82,8 @@ def parse_resume_openaigpt(input_filepath: str) -> dict:
         model="gpt-4o-mini",
     )
 
-    json_str_repr = chat_completion.choices[0].message.content.replace('\n', '').replace('`', '')
+    json_str_repr = chat_completion.choices[0].message.content.replace(
+        '\n', '').replace('`', '')
     try:
         return json.loads(json_str_repr)
     except json.JSONDecodeError:
