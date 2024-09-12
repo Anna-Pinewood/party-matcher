@@ -203,6 +203,7 @@ async def process_non_pdf(message: Message):
     await message.answer("Attach a CV in PDF format.")
 
 
+
 @router.message(ProfileForm.text_desc)
 async def register_text_desc(message: Message, state: FSMContext):
     await state.update_data(text_desc=message.text)

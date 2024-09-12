@@ -8,7 +8,7 @@ from openai import DefaultHttpxClient, OpenAI
 from pypdf import PdfReader
 
 from consts import OPENAI_API_KEY, PROXY_URL, YANDEX_API_KEY, YANDEX_FOLDER_ID
-from prompts import RESUME_PROMPT_BASE
+from parsers.prompts import RESUME_PROMPT_BASE
 
 
 def extract_text_from_pdf_file(input_filepath: str) -> str:
