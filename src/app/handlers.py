@@ -1,3 +1,5 @@
+import asyncio
+import json
 import aiohttp
 from aiogram import F, Router
 from aiogram.filters import Command, CommandStart
@@ -7,6 +9,8 @@ from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 
 import app.database.requests as rq
 import app.keyboards as kb
+from parsers.parse_resume import (parse_resume_yandexgpt,
+                                  parse_resume_openaigpt)
 
 router = Router()
 
@@ -176,12 +180,11 @@ async def register_cv(callback: CallbackQuery, state: FSMContext):
 async def process_cv(message: Message, state: FSMContext):
     document = message.document
 
-    # Скачиваем PDF файл
+    # Download PDF file
     file_id = document.file_id
     file_info = await message.bot.get_file(file_id)
-    file_url = (
-        f"https://api.telegram.org/file/bot{message.bot.token}/{file_info.file_path}"
-    )
+    file_url = f"https://api.telegram.org/file/bot"
+    file_url = f"{file_url}/{message.bot.token}/{file_info.file_path}"
 
     file_path = f"/app/media/{message.from_user.id}.pdf"
     async with aiohttp.ClientSession() as session:
@@ -190,10 +193,13 @@ async def process_cv(message: Message, state: FSMContext):
                 with open(file_path, "wb") as f:
                     f.write(await response.read())
 
-    await state.update_data(cv=file_path)
+    parsed_resume = await asyncio.to_thread(parse_resume_openaigpt, file_path)
+    parsed_resume_json = json.dumps(parsed_resume, ensure_ascii=False)
+
+    await state.update_data(cv=file_path, parsed_resume=parsed_resume_json)
 
     await message.answer(
-        "The CV has been successfully saved!\nTell me who you'd like to socialize with."
+        "The CV has been successfully saved and parsed!\nTell me who you'd like to socialize with."
     )
     await state.set_state(ProfileForm.text_desc)
 
@@ -201,7 +207,6 @@ async def process_cv(message: Message, state: FSMContext):
 @router.message(ProfileForm.cv, F.document.mime_type != "application/pdf")
 async def process_non_pdf(message: Message):
     await message.answer("Attach a CV in PDF format.")
-
 
 
 @router.message(ProfileForm.text_desc)
@@ -217,7 +222,8 @@ async def set_user(message: Message, state: FSMContext):
     user_data = await state.get_data()
     await rq.set_user(user_data)
 
-    formatted_data = "\n".join(f"{key}: {value}" for key, value in user_data.items())
+    formatted_data = "\n".join(
+        f"{key}: {value}" for key, value in user_data.items())
     await message.answer(f"Вот все ваши данные:\n{formatted_data}")
 
     # new_party_id = await rq.add_party('popopepe', 'asdasda')

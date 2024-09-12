@@ -1,3 +1,4 @@
+import json
 from sqlalchemy import select
 
 from app.database.models import Party, PartyUser, User, async_session
@@ -10,7 +11,7 @@ async def set_user(profile_data: dict) -> None:
         )
 
         if user:
-            # Если пользователь найден, обновляем его данные
+            # If user is found, update their data
             user.name = profile_data["name"]
             user.gender = profile_data["gender"]
             user.age = profile_data["age"]
@@ -20,8 +21,10 @@ async def set_user(profile_data: dict) -> None:
             user.language = profile_data["language"]
             user.cv = profile_data["cv"]
             user.text_desc = profile_data["text_desc"]
+            user.parsed_resume = json.dumps(
+                profile_data.get("parsed_resume", {}, ensure_ascii=False))
         else:
-            # Если пользователь не найден, создаём нового
+            # If user is not found, create a new one
             new_user = User(
                 tg_id=profile_data["tg_id"],
                 name=profile_data["name"],
@@ -33,6 +36,7 @@ async def set_user(profile_data: dict) -> None:
                 language=profile_data["language"],
                 cv=profile_data["cv"],
                 text_desc=profile_data["text_desc"],
+                parsed_resume=json.dumps(profile_data.get("parsed_resume", {}, ensure_ascii=False))
             )
             session.add(new_user)
 
