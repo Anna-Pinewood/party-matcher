@@ -15,7 +15,7 @@ services:
 
   bot:
     build: ./
-    container_name: aiogram_bot
+    container_name: "${BOT_NAME}"
     environment:
       - DATABASE_URL=postgresql://hackuser:hackpassword@postgres:5433/hackdb
     volumes:

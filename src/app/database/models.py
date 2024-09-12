@@ -1,7 +1,7 @@
 import os
 
 from dotenv import load_dotenv
-from sqlalchemy import BigInteger, ForeignKey, String, func, select
+from sqlalchemy import BigInteger, ForeignKey, String, func, select, Text
 from sqlalchemy.ext.asyncio import (AsyncAttrs, AsyncSession,
                                     async_sessionmaker, create_async_engine)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -30,6 +30,7 @@ class User(Base):
     reddit_link: Mapped[str] = mapped_column(String(25), nullable=True)
     cv: Mapped[str] = mapped_column(String(25), nullable=True)
     text_desc: Mapped[str] = mapped_column(String(1500), nullable=True)
+    parsed_resume: Mapped[str] = mapped_column(Text, nullable=True)  # New field for parsed resume data
 
 
 class Party(Base):
