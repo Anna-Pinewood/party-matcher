@@ -61,6 +61,7 @@ async def get_user(tg_id):
                 "reddit_link": result.reddit_link,
                 "cv": result.cv,
                 "text_desc": result.text_desc,
+                "parsed_resume": result.parsed_resume
             }
             return user_data
         else:

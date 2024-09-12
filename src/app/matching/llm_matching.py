@@ -45,7 +45,7 @@ chain = prompt | llm
 def get_matching_llm(user1: dict, users_top: list[dict]) -> str:
     variables = {
         "target_user": str(user1),
-        "other_users": json.dumps('users_top', ensure_ascii=False, indent=4)
+        "other_users": json.dumps(users_top, ensure_ascii=False, indent=4)
     }
     result = chain.invoke(variables)
     return result.content
