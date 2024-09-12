@@ -18,3 +18,5 @@ PROXY_URL = os.environ.get(
     "PROXY_URL", default=config_env.get("PROXY_URL"))
 TG_TOKEN = os.environ.get(
     "TG_TOKEN", default=config_env.get("TG_TOKEN"))
+SQLALCHEMY_URL = os.environ.get(
+    "SQLALCHEMY_URL", default=config_env.get("SQLALCHEMY_URL"))
