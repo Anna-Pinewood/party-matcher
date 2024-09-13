@@ -1,5 +1,6 @@
 ## Bot description
-@party_test_1_bot
+Бот для матчинга людей по интересам. 
+
 
 ## How to run
 1. Скопируйте .env.example, создайте .env файл и заполните его.

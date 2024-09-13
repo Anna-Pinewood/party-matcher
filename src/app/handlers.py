@@ -47,6 +47,7 @@ async def get_user_info(message: Message, state: FSMContext):
         "/start - Show this message\n"
         "/create_profile - create a profile\n"
         "/join_party - join to party\n"
+        "get_matches - when you created profile u can get matches\n"
     )
     await message.answer(description)
 
