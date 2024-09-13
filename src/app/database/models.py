@@ -1,7 +1,7 @@
 import os
 
 from dotenv import load_dotenv
-from sqlalchemy import BigInteger, ForeignKey, String, func, select
+from sqlalchemy import BigInteger, ForeignKey, String, func, select, Text
 from sqlalchemy.ext.asyncio import (AsyncAttrs, AsyncSession,
                                     async_sessionmaker, create_async_engine)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -22,21 +22,23 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     tg_id = mapped_column(BigInteger)
     language: Mapped[str] = mapped_column(String(10), nullable=True)
-    name: Mapped[str] = mapped_column(String(25))
+    name: Mapped[str] = mapped_column(String(100))
     gender: Mapped[int] = mapped_column()
     age: Mapped[int] = mapped_column()
-    phone_number: Mapped[str] = mapped_column(String(25))
-    vk_link: Mapped[str] = mapped_column(String(25), nullable=True)
-    reddit_link: Mapped[str] = mapped_column(String(25), nullable=True)
-    cv: Mapped[str] = mapped_column(String(25), nullable=True)
+    phone_number: Mapped[str] = mapped_column(String(55))
+    vk_link: Mapped[str] = mapped_column(String(500), nullable=True)
+    reddit_link: Mapped[str] = mapped_column(String(500), nullable=True)
+    cv: Mapped[str] = mapped_column(String(100), nullable=True)
     text_desc: Mapped[str] = mapped_column(String(1500), nullable=True)
+    parsed_resume: Mapped[str] = mapped_column(
+        Text, nullable=True)  # New field for parsed resume data
 
 
 class Party(Base):
     __tablename__ = "parties"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(25))
+    name: Mapped[str] = mapped_column(String(100))
     description: Mapped[str] = mapped_column(String(120))
 
 
@@ -62,8 +64,10 @@ async def async_main():
 
         if party_count == 0:
             initial_parties = [
-                Party(name="Birthday Bash", description="Celebrating a birthday."),
-                Party(name="New Year's Eve", description="Welcoming the new year."),
+                Party(name="Birthday Bash",
+                      description="Celebrating a birthday."),
+                Party(name="New Year's Eve",
+                      description="Welcoming the new year."),
                 Party(name="Office Party", description="Annual office gathering."),
             ]
 

@@ -1,3 +1,7 @@
+import asyncio
+import json
+import logging
+import os
 import aiohttp
 from aiogram import F, Router
 from aiogram.filters import Command, CommandStart
@@ -5,8 +9,20 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 
+from app.database import requests as rq
+from app.matching.matching import calculate_similarity
+from app.matching.llm_matching import get_matching_llm
+import json
+from aiogram.types import Message
+from aiogram.filters import Command
+
 import app.database.requests as rq
 import app.keyboards as kb
+from parsers.parse_resume import (parse_resume_yandexgpt,
+                                  parse_resume_openaigpt)
+
+logging.basicConfig(level=logging.INFO)
+
 
 router = Router()
 
@@ -32,6 +48,7 @@ async def get_user_info(message: Message, state: FSMContext):
         "/start - Show this message\n"
         "/create_profile - create a profile\n"
         "/join_party - join to party\n"
+        "/get_matches - when you created profile u can get matches\n"
     )
     await message.answer(description)
 
@@ -176,24 +193,35 @@ async def register_cv(callback: CallbackQuery, state: FSMContext):
 async def process_cv(message: Message, state: FSMContext):
     document = message.document
 
-    # Скачиваем PDF файл
+    # Download PDF file
     file_id = document.file_id
     file_info = await message.bot.get_file(file_id)
-    file_url = (
-        f"https://api.telegram.org/file/bot{message.bot.token}/{file_info.file_path}"
-    )
+    file_url = f"https://api.telegram.org/file/bot"
+    file_url = f"{file_url}{message.bot.token}/{file_info.file_path}"
+    # file_url = (
+    #     f"https://api.telegram.org/file/bot{message.bot.token}/{file_info.file_path}"
+    # )
 
     file_path = f"/app/media/{message.from_user.id}.pdf"
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+    logging.info("Saving file...")
     async with aiohttp.ClientSession() as session:
         async with session.get(file_url) as response:
             if response.status == 200:
                 with open(file_path, "wb") as f:
+                    logging.info('File path %s', file_path)
                     f.write(await response.read())
+            else:
+                logging.error("Error in sessiong.get")
 
-    await state.update_data(cv=file_path)
+    parsed_resume = await asyncio.to_thread(parse_resume_openaigpt, file_path)
+    parsed_resume_json = json.dumps(parsed_resume, ensure_ascii=False)
+
+    await state.update_data(cv=file_path, parsed_resume=parsed_resume_json)
 
     await message.answer(
-        "The CV has been successfully saved!\nTell me who you'd like to socialize with."
+        "The CV has been successfully saved and parsed!\nTell me who you'd like to socialize with."
     )
     await state.set_state(ProfileForm.text_desc)
 
@@ -216,7 +244,8 @@ async def set_user(message: Message, state: FSMContext):
     user_data = await state.get_data()
     await rq.set_user(user_data)
 
-    formatted_data = "\n".join(f"{key}: {value}" for key, value in user_data.items())
+    formatted_data = "\n".join(
+        f"{key}: {value}" for key, value in user_data.items())
     await message.answer(f"Вот все ваши данные:\n{formatted_data}")
 
     # new_party_id = await rq.add_party('popopepe', 'asdasda')
@@ -261,3 +290,52 @@ async def process_party_id(message: Message, state: FSMContext):
         await message.answer("Invalid Party ID. Please enter a valid number.")
     finally:
         await state.clear()
+
+
+@router.message(Command("get_matches"))
+async def get_matches(message: Message):
+    tg_id = message.from_user.id
+
+    user_profile = await rq.get_user(tg_id)
+    if not user_profile:
+        await message.answer("You need to create a profile first. Use /create_profile command.")
+        return
+
+    party_id = await rq.get_user_party_id(tg_id)
+    if not party_id:
+        await message.answer("You're not in any party. Join a party first using /join_party command.")
+        return
+
+    party_users = await rq.get_party_users(party_id)
+    logging.info('Got %s users', len(party_users))
+
+    user_similarities = []
+    for other_user in party_users:
+        if other_user['tg_id'] != tg_id:
+
+            similarity = calculate_similarity(user_profile, other_user)
+            user_similarities.append((other_user, similarity))
+
+    user_similarities.sort(key=lambda x: x[1], reverse=True)
+    logging.info('Top scores\n%s', str(user_similarities[:10]))
+
+    top_users = [user for user, _ in user_similarities[:10]]
+
+    matching_result = get_matching_llm(user_profile, top_users)
+
+    # try:
+    #     matches = json.loads(matching_result)
+    #     response = "Your top matches:\n\n"
+    #     for match in matches:
+    #         response += f"Name: {match['name']}\n"
+    #         response += f"Similarity: {match['similarity']}\n"
+    #         response += f"Explanation: {match['explanation']}\n"
+    #         user = next(
+    #             (u for u in top_users if u['name'] == match['name']), None)
+    #         if user:
+    #             response += f"Contact: {user.get('phone_number', 'N/A')}\n"
+    #         response += "\n"
+    # except json.JSONDecodeError:
+    #     response = "An error occurred while processing your matches. Please try again later."
+
+    await message.answer(matching_result)
