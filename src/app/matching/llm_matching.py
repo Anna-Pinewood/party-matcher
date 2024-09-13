@@ -1,11 +1,15 @@
 import json
+import logging
 from langchain.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
 from langchain.callbacks import get_openai_callback
 from langchain_core.output_parsers import JsonOutputParser
+from openai import DefaultHttpxClient
 
 from consts import OPENAI_API_KEY, PROXY_URL
+
+logging.basicConfig(level=logging.INFO)
 
 
 template = """
@@ -37,15 +41,22 @@ prompt = PromptTemplate(
 )
 
 
-llm = ChatOpenAI(model="gpt-4o", api_key=OPENAI_API_KEY,
-                 base_url=PROXY_URL, max_tokens=None)
+llm = ChatOpenAI(model="gpt-4o",
+                 api_key=OPENAI_API_KEY,
+                 http_client=DefaultHttpxClient(proxy=PROXY_URL), max_tokens=None)
+
 chain = prompt | llm
 
 
 def get_matching_llm(user1: dict, users_top: list[dict]) -> str:
+    target_user = json.dumps(user1, ensure_ascii=False, indent=4)
+    other_users = json.dumps(users_top, ensure_ascii=False, indent=4)
+
+    logging.info("Sending openai request...")
     variables = {
-        "target_user": str(user1),
-        "other_users": json.dumps(users_top, ensure_ascii=False, indent=4)
+        "target_user": target_user,
+        "other_users": other_users
     }
     result = chain.invoke(variables)
+    logging.info("Got %s", str(result.content))
     return result.content

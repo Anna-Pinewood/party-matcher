@@ -17,7 +17,7 @@ services:
     build: ./
     container_name: "${BOT_NAME}"
     environment:
-      - DATABASE_URL=postgresql://hackuser:hackpassword@postgres:5433/hackdb
+      - DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB}"
     volumes:
       - "${HOME}/data:/app/media"  # Updated volume mount
     depends_on:

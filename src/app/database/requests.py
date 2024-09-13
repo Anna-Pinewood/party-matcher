@@ -22,7 +22,7 @@ async def set_user(profile_data: dict) -> None:
             user.cv = profile_data["cv"]
             user.text_desc = profile_data["text_desc"]
             user.parsed_resume = json.dumps(
-                profile_data.get("parsed_resume", {}, ensure_ascii=False))
+                profile_data.get("parsed_resume", {}), ensure_ascii=False)
         else:
             # If user is not found, create a new one
             new_user = User(
@@ -36,7 +36,8 @@ async def set_user(profile_data: dict) -> None:
                 language=profile_data["language"],
                 cv=profile_data["cv"],
                 text_desc=profile_data["text_desc"],
-                parsed_resume=json.dumps(profile_data.get("parsed_resume", {}, ensure_ascii=False))
+                parsed_resume=json.dumps(profile_data.get(
+                    "parsed_resume", {}), ensure_ascii=False)
             )
             session.add(new_user)
 
@@ -99,3 +100,40 @@ async def add_user_to_party(party_id: int, tg_id):
             return "add_to_party"
         else:
             return "no_party"
+
+
+async def get_user_party_id(tg_id: int) -> int:
+    async with async_session() as session:
+        result = await session.execute(
+            select(PartyUser.party_id)
+            .join(User, User.id == PartyUser.user_id)
+            .where(User.tg_id == tg_id)
+        )
+        return result.scalar_one_or_none()
+
+
+async def get_party_users(party_id: int):
+    async with async_session() as session:
+        result = await session.execute(
+            select(User)
+            .join(PartyUser, User.id == PartyUser.user_id)
+            .where(PartyUser.party_id == party_id)
+        )
+        users = result.scalars().all()
+        return [
+            {
+                "id": user.id,
+                "tg_id": user.tg_id,
+                "language": user.language,
+                "name": user.name,
+                "gender": user.gender,
+                "age": user.age,
+                "phone_number": user.phone_number,
+                "vk_link": user.vk_link,
+                "reddit_link": user.reddit_link,
+                "cv": user.cv,
+                "text_desc": user.text_desc,
+                "parsed_resume": user.parsed_resume
+            }
+            for user in users
+        ]

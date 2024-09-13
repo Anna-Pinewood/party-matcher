@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import aiohttp
 from aiogram import F, Router
 from aiogram.filters import Command, CommandStart
@@ -7,10 +8,20 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 
+from app.database import requests as rq
+from app.matching.matching import calculate_similarity
+from app.matching.llm_matching import get_matching_llm
+import json
+from aiogram.types import Message
+from aiogram.filters import Command
+
 import app.database.requests as rq
 import app.keyboards as kb
 from parsers.parse_resume import (parse_resume_yandexgpt,
                                   parse_resume_openaigpt)
+
+logging.basicConfig(level=logging.INFO)
+
 
 router = Router()
 
@@ -268,3 +279,51 @@ async def process_party_id(message: Message, state: FSMContext):
         await message.answer("Invalid Party ID. Please enter a valid number.")
     finally:
         await state.clear()
+
+
+@router.message(Command("get_matches"))
+async def get_matches(message: Message):
+    tg_id = message.from_user.id
+
+    user_profile = await rq.get_user(tg_id)
+    if not user_profile:
+        await message.answer("You need to create a profile first. Use /create_profile command.")
+        return
+
+    party_id = await rq.get_user_party_id(tg_id)
+    if not party_id:
+        await message.answer("You're not in any party. Join a party first using /join_party command.")
+        return
+
+    party_users = await rq.get_party_users(party_id)
+    logging.info('Got %s users', len(party_users))
+
+    user_similarities = []
+    for other_user in party_users:
+        if other_user['tg_id'] != tg_id:
+            similarity = calculate_similarity(user_profile, other_user)
+            user_similarities.append((other_user, similarity))
+
+    user_similarities.sort(key=lambda x: x[1], reverse=True)
+    logging.info('Top scores\n%s', "\n".join(user_similarities[:10]))
+
+    top_users = [user for user, _ in user_similarities[:10]]
+
+    matching_result = get_matching_llm(user_profile, top_users)
+
+    # try:
+    #     matches = json.loads(matching_result)
+    #     response = "Your top matches:\n\n"
+    #     for match in matches:
+    #         response += f"Name: {match['name']}\n"
+    #         response += f"Similarity: {match['similarity']}\n"
+    #         response += f"Explanation: {match['explanation']}\n"
+    #         user = next(
+    #             (u for u in top_users if u['name'] == match['name']), None)
+    #         if user:
+    #             response += f"Contact: {user.get('phone_number', 'N/A')}\n"
+    #         response += "\n"
+    # except json.JSONDecodeError:
+    #     response = "An error occurred while processing your matches. Please try again later."
+
+    await message.answer(matching_result)
