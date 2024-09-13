@@ -9,5 +9,6 @@
 
 
 ## How to run
+0. Вам нужна ветка `olga/current-build`
 1. Скопируйте .env.example, создайте .env файл и заполните его.
 2.  `docker compose up -d bot --build`
