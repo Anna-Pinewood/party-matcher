@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import os
 import aiohttp
 from aiogram import F, Router
 from aiogram.filters import Command, CommandStart
@@ -47,7 +48,7 @@ async def get_user_info(message: Message, state: FSMContext):
         "/start - Show this message\n"
         "/create_profile - create a profile\n"
         "/join_party - join to party\n"
-        "get_matches - when you created profile u can get matches\n"
+        "/get_matches - when you created profile u can get matches\n"
     )
     await message.answer(description)
 
@@ -196,14 +197,23 @@ async def process_cv(message: Message, state: FSMContext):
     file_id = document.file_id
     file_info = await message.bot.get_file(file_id)
     file_url = f"https://api.telegram.org/file/bot"
-    file_url = f"{file_url}/{message.bot.token}/{file_info.file_path}"
+    file_url = f"{file_url}{message.bot.token}/{file_info.file_path}"
+    # file_url = (
+    #     f"https://api.telegram.org/file/bot{message.bot.token}/{file_info.file_path}"
+    # )
 
     file_path = f"/app/media/{message.from_user.id}.pdf"
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+    logging.info("Saving file...")
     async with aiohttp.ClientSession() as session:
         async with session.get(file_url) as response:
             if response.status == 200:
                 with open(file_path, "wb") as f:
+                    logging.info('File path %s', file_path)
                     f.write(await response.read())
+            else:
+                logging.error("Error in sessiong.get")
 
     parsed_resume = await asyncio.to_thread(parse_resume_openaigpt, file_path)
     parsed_resume_json = json.dumps(parsed_resume, ensure_ascii=False)
@@ -302,11 +312,12 @@ async def get_matches(message: Message):
     user_similarities = []
     for other_user in party_users:
         if other_user['tg_id'] != tg_id:
+
             similarity = calculate_similarity(user_profile, other_user)
             user_similarities.append((other_user, similarity))
 
     user_similarities.sort(key=lambda x: x[1], reverse=True)
-    logging.info('Top scores\n%s', "\n".join(user_similarities[:10]))
+    logging.info('Top scores\n%s', str(user_similarities[:10]))
 
     top_users = [user for user, _ in user_similarities[:10]]
 

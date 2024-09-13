@@ -24,7 +24,7 @@ def extract_text_from_pdf_file(input_filepath: str) -> str:
 
 def parse_resume_yandexgpt(input_filepath: str) -> dict:
     if not os.path.exists(input_filepath):
-        logging.error(f"No such file: {input_filepath}")
+        logging.error(f": {input_filepath}")
         return {}
     resume_text = extract_text_from_pdf_file(input_filepath)
 

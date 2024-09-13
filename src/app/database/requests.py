@@ -25,6 +25,12 @@ async def set_user(profile_data: dict) -> None:
                 profile_data.get("parsed_resume", {}), ensure_ascii=False)
         else:
             # If user is not found, create a new one
+            parsed_resume_user = profile_data.get(
+                "parsed_resume", {})
+            if isinstance(parsed_resume_user, dict):
+                parsed_resume_user = json.dumps(
+                    parsed_resume_user, ensure_ascii=False)
+
             new_user = User(
                 tg_id=profile_data["tg_id"],
                 name=profile_data["name"],
@@ -36,8 +42,7 @@ async def set_user(profile_data: dict) -> None:
                 language=profile_data["language"],
                 cv=profile_data["cv"],
                 text_desc=profile_data["text_desc"],
-                parsed_resume=json.dumps(profile_data.get(
-                    "parsed_resume", {}), ensure_ascii=False)
+                parsed_resume=parsed_resume_user
             )
             session.add(new_user)
 

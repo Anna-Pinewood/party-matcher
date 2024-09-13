@@ -20,6 +20,7 @@ services:
       - DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB}"
     volumes:
       - "${HOME}/data:/app/media"  # Updated volume mount
+      # - "/home/olga/data:/app/media"  # Updated volume mount
     depends_on:
       - postgres
     tty: true
