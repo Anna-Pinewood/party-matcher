@@ -1,10 +1,13 @@
 ## Bot description
-Бот для матчинга людей по интересам. 
+ЧТО: Бот для матчинга людей по интересам (на основе резюме и соцсетей)
+ДЛЯ КОГО: Для участников профессиональных сходок.
+ЗАЧЕМ: Чтобы люди могли на конференции находить интересные знакомства автоматически.
+ВЫДЕЛЯЕТ: сфера – именно в первую очередь проф. знакомства; используем ллм и nlp для матчинга.
 ```
 /start - Show this message
 /create_profile - create a profile
 /join_party - join to party
-/get_matches - when you created profile u can get matches
+/get_matches - when you created profile you can get matches
 ```
 
 
