@@ -150,7 +150,7 @@ async def register_vk_link(message: Message, state: FSMContext):
 async def register_reddit(callback: CallbackQuery, state: FSMContext):
     answer = callback.data
     if answer == "reddit_yes":
-        await callback.message.answer("Please send your Reddit profile")
+        await callback.message.answer("Please send your Reddit username")
         await state.set_state(ProfileForm.reddit_link)
     elif answer == "reddit_no":
         await state.update_data(reddit_link=None)
